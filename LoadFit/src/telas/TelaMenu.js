@@ -68,7 +68,7 @@ export default function TelaMenu({ navigation }) {
             Luiz Fernando,
             Thadeu,
             Guilherme,
-            Gustavo
+            Gustavo Couto
           </Text>
 
           <Text style={styles.descricao}>
