@@ -48,18 +48,10 @@ export default function TelaCadastroCaminhao({ navigation }) {
           autoCapitalize="characters"
         />
 
-        <Text style={styles.label}>Marca</Text>
+        <Text style={styles.label}>Tipo de Veículo</Text>
         <TextInput
           style={styles.input}
-          placeholder="Ex: Volvo, Scania, Mercedes"
-          value={marca}
-          onChangeText={setMarca}
-        />
-
-        <Text style={styles.label}>Modelo</Text>
-        <TextInput
-          style={styles.input}
-          placeholder="Ex: FH 540, R 450"
+          placeholder="Ex: Truck, Malhal"
           value={modelo}
           onChangeText={setModelo}
         />
