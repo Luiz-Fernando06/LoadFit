@@ -83,7 +83,7 @@ export default function TelaMenu({ navigation }) {
 
           <Pressable
             style={styles.card}
-            onPress={() => funcionalidadeEmBreve("Caminhões")}
+            onPress={() => navigation.navigate("CadastroCaminhao")}
           >
 
             <Text style={styles.icone}>
