@@ -11,7 +11,8 @@ import {
     KeyboardAvoidingView,
     Platform,
     ScrollView,
-    useWindowDimensions
+    useWindowDimensions,
+    Image
 } from "react-native";
 
 // Evita que o conteúdo fique embaixo da barra de status
@@ -74,9 +75,7 @@ export default function TelaLogin({ navigation }) {
 
                             <View style={styles.logo}>
 
-                                <Text style={styles.logoIcon}>
-                                    LF
-                                </Text>
+                                <Image source={require("../../assets/logo.png")} style={styles.logoIcon} />
 
                             </View>
 
@@ -185,7 +184,7 @@ const styles = StyleSheet.create({
     // Tela inteira
     container: {
         flex: 1,
-        backgroundColor: "#F3F4F6"
+        backgroundColor: "#e4b89e" //fce867, 
     },
 
 
@@ -227,8 +226,8 @@ const styles = StyleSheet.create({
 
     // Símbolo simples da marca.
     logo: {
-        width: 64,
-        height: 64,
+        width: 100,
+        height: 100,
 
         borderRadius: 16,
 
@@ -243,6 +242,11 @@ const styles = StyleSheet.create({
 
     logoIcon: {
         color: "#F28C28",
+
+        width: 150, 
+        height: 100,
+
+        justifyContent: "center",
 
         fontSize: 19,
         fontWeight: "800",
@@ -300,7 +304,7 @@ const styles = StyleSheet.create({
         minHeight: 52,
 
         borderWidth: 1,
-        borderColor: "#D5DAE0",
+        borderColor: "#7a3f074d",
 
         borderRadius: 9,
 
