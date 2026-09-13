@@ -1,44 +1,42 @@
-//O useState é usado para armazenar valores que mudam enquanto o app esta sendo usado
+// O useState é usado para armazenar valores que mudam enquanto o app está sendo usado.
 import { useState } from "react";
 
 import {
-    //Serve para gerar container (montar layout)
     View,
-
-    //Serve para gerar textos
     Text,
-
-    //Serve para receber entrada do usuario
     TextInput,
-
-    //Serve para dizer que esse componente pode ser clicado, direcionando para algo
     Pressable,
-
-    //Serve para criar os estilos CSS no react-native
     StyleSheet,
-
-    //Monta uma caixa de aviso nativo do celular
     Alert,
-
-    //Serve para impedir que o teclado virtual do celular fique em cima dos campos da tela.
     KeyboardAvoidingView,
-
-    //Serve para descobrir em qual S.O o app esta rodando
-    Platform
+    Platform,
+    ScrollView,
+    useWindowDimensions,
+    Image
 } from "react-native";
 
-//Biblioteca para responsividade da tela do app, para não ocupar a barra de status e a de navegação 
+// Evita que o conteúdo fique embaixo da barra de status
+// e da área de navegação do celular.
 import { SafeAreaView } from "react-native-safe-area-context";
 
-//Esse componente pode ser importado por outro arquivo
-export default function TelaLogin({ navigation  }) {
+
+export default function TelaLogin({ navigation }) {
 
     const [email, setEmail] = useState("");
     const [senha, setSenha] = useState("");
 
+    // Retorna a largura atual da tela.
+    // Muda automaticamente caso a janela seja redimensionada.
+    const { width } = useWindowDimensions();
+
+    // Consideramos desktop/tablet telas maiores que 768px.
+    const isDesktop = width >= 768;
+
+
     function entrar() {
 
         if (!email.trim() || !senha.trim()) {
+
             Alert.alert(
                 "Campos obrigatórios",
                 "Preencha o e-mail e a senha."
@@ -50,138 +48,333 @@ export default function TelaLogin({ navigation  }) {
         navigation.replace("Menu");
     }
 
-    return(
-        
+
+    return (
+
         <SafeAreaView style={styles.container}>
-            <KeyboardAvoidingView style={styles.content} 
-            behavior={Platform.OS === "ios" ? "padding" : undefined}>
 
-                <View style={styles.logo}>
-                    <Text style={styles.logoText}>Luiz Fernando,
-            Thadeu,
-            Guilherme,
-            Gustavo</Text>
-                </View>
+            <KeyboardAvoidingView
+                style={styles.keyboardContainer}
+                behavior={Platform.OS === "ios" ? "padding" : undefined}
+            >
 
-                <Text style={styles.subtitulo}>
-                    Organizador de Cargas
-                </Text>
+                <ScrollView
+                    contentContainerStyle={styles.scrollContent}
+                    keyboardShouldPersistTaps="handled"
+                >
 
-                <View style={styles.form}>
-                    <Text style={styles.label}>E-mail</Text>
+                    <View
+                        style={[
+                            styles.content,
+                            isDesktop && styles.contentDesktop
+                        ]}
+                    >
 
-                    <TextInput
-                         style={styles.input}
-                         placeholder="Digite seu e-mail"
-                         keyboardType="email-address"
-                         autoCapitalize="none"
-                         value={email}
-                         onChangeText={setEmail}
-                    />
+                        {/* Identidade do sistema */}
+                        <View style={styles.header}>
+
+                            <View style={styles.logo}>
+
+                                <Image source={require("../../assets/logo.png")} style={styles.logoIcon} />
+
+                            </View>
+
+                            <Text style={styles.nomeSistema}>
+                                LoadFit
+                            </Text>
+
+                            <Text style={styles.subtitulo}>
+                                Organização inteligente de cargas
+                            </Text>
+
+                        </View>
 
 
-                    <Text style={styles.label}>Senha</Text>
+                        {/* Formulário */}
+                        <View style={styles.form}>
 
-                    <TextInput
-                        style={styles.input}
-                        placeholder="Digite sua senha"
-                        secureTextEntry
-                        value={senha}
-                        onChangeText={setSenha}
-                    />
+                            <View style={styles.campo}>
+
+                                <Text style={styles.label}>
+                                    E-mail
+                                </Text>
+
+                                <TextInput
+                                    style={styles.input}
+                                    placeholder="Digite seu e-mail"
+                                    placeholderTextColor="#8B949E"
+                                    keyboardType="email-address"
+                                    autoCapitalize="none"
+                                    autoCorrect={false}
+                                    value={email}
+                                    onChangeText={setEmail}
+                                />
+
+                            </View>
 
 
-                    <Pressable style={styles.botao} onPress={entrar}>
-                        <Text style={styles.textoBotao}>Entrar</Text>
-                    </Pressable>
+                            <View style={styles.campo}>
 
-                    <Pressable>
-                      <Text style={styles.botaoCadastro} onPress={() => navigation.navigate("Cadastro")}>Criar Usuario</Text>
-                    </Pressable>
-                      
-                </View>
+                                <Text style={styles.label}>
+                                    Senha
+                                </Text>
+
+                                <TextInput
+                                    style={styles.input}
+                                    placeholder="Digite sua senha"
+                                    placeholderTextColor="#8B949E"
+                                    secureTextEntry
+                                    value={senha}
+                                    onChangeText={setSenha}
+                                />
+
+                            </View>
+
+
+                            <Pressable
+                                style={({ pressed }) => [
+                                    styles.botao,
+                                    pressed && styles.botaoPressionado
+                                ]}
+                                onPress={entrar}
+                            >
+
+                                <Text style={styles.textoBotao}>
+                                    Entrar
+                                </Text>
+
+                            </Pressable>
+
+
+                            <View style={styles.areaCadastro}>
+
+                                <Text style={styles.textoCadastro}>
+                                    Ainda não possui uma conta?
+                                </Text>
+
+                                <Pressable
+                                    onPress={() =>
+                                        navigation.navigate("Cadastro")
+                                    }
+                                >
+
+                                    <Text style={styles.botaoCadastro}>
+                                        Criar usuário
+                                    </Text>
+
+                                </Pressable>
+
+                            </View>
+
+                        </View>
+
+                    </View>
+
+                </ScrollView>
 
             </KeyboardAvoidingView>
-        </SafeAreaView>
 
+        </SafeAreaView>
     );
-};
+}
+
 
 const styles = StyleSheet.create({
 
-  container: {
-    flex: 1,
-    backgroundColor: "#F8FAFC"
-  },
+    // Tela inteira
+    container: {
+        flex: 1,
+        backgroundColor: "#e4b89e" //fce867, 
+    },
 
-  content: {
-    flex: 1,
-    justifyContent: "center",
-    paddingHorizontal: 30
-  },
 
-  logo: {
-    width: 90,
-    height: 90,
-    borderRadius: 25,
-    backgroundColor: "#2563EB",
-    justifyContent: "center",
-    alignItems: "center",
-    alignSelf: "center",
-    marginBottom: 20
-  },
+    keyboardContainer: {
+        flex: 1
+    },
 
-  subtitulo: {
-    fontSize: 15,
-    textAlign: "center",
-    color: "#64748B",
-    marginTop: 5,
-    marginBottom: 40
-  },
 
-  form: {
-    width: "100%"
-  },
+    // Permite centralizar verticalmente,
+    // mas continua funcionando caso a tela seja pequena.
+    scrollContent: {
+        flexGrow: 1,
+        justifyContent: "center",
+        paddingVertical: 40,
+        paddingHorizontal: 20
+    },
 
-  label: {
-    fontSize: 15,
-    fontWeight: "600",
-    color: "#334155",
-    marginBottom: 7
-  },
 
-  input: {
-    height: 52,
-    borderWidth: 1,
-    borderColor: "#CBD5E1",
-    borderRadius: 10,
-    paddingHorizontal: 15,
-    backgroundColor: "#FFFFFF",
-    fontSize: 16,
-    marginBottom: 20
-  },
+    // Container principal.
+    // width 100% para celular.
+    content: {
+        width: "100%",
+        maxWidth: 440,
+        alignSelf: "center"
+    },
 
-  botao: {
-    height: 52,
-    backgroundColor: "#2563EB",
-    borderRadius: 10,
-    justifyContent: "center",
-    alignItems: "center",
-    marginTop: 10
-  },
 
-  textoBotao: {
-    color: "#FFFFFF",
-    fontSize: 16,
-    fontWeight: "bold"
-  },
+    // Pequena adaptação exclusiva para telas maiores.
+    contentDesktop: {
+        paddingHorizontal: 10
+    },
 
-  botaoCadastro: {
-    color: "#004ffa",
-    fontSize: 13,
-    fontWeight: "600",
-    textAlign: "center",
-    marginTop: 20
-  }
+
+    header: {
+        alignItems: "center",
+        marginBottom: 38
+    },
+
+
+    // Símbolo simples da marca.
+    logo: {
+        width: 100,
+        height: 100,
+
+        borderRadius: 16,
+
+        backgroundColor: "#252B33",
+
+        justifyContent: "center",
+        alignItems: "center",
+
+        marginBottom: 18
+    },
+
+
+    logoIcon: {
+        color: "#F28C28",
+
+        width: 150, 
+        height: 100,
+
+        justifyContent: "center",
+
+        fontSize: 19,
+        fontWeight: "800",
+
+        letterSpacing: 1
+    },
+
+
+    nomeSistema: {
+        fontSize: 30,
+
+        fontWeight: "700",
+
+        color: "#20262E",
+
+        letterSpacing: -0.5
+    },
+
+
+    subtitulo: {
+        fontSize: 14,
+
+        color: "#6B7280",
+
+        textAlign: "center",
+
+        marginTop: 7
+    },
+
+
+    form: {
+        width: "100%"
+    },
+
+
+    campo: {
+        marginBottom: 19
+    },
+
+
+    label: {
+        fontSize: 14,
+
+        fontWeight: "600",
+
+        color: "#303842",
+
+        marginBottom: 8
+    },
+
+
+    input: {
+        width: "100%",
+
+        minHeight: 52,
+
+        borderWidth: 1,
+        borderColor: "#7a3f074d",
+
+        borderRadius: 9,
+
+        paddingHorizontal: 15,
+
+        backgroundColor: "#FFFFFF",
+
+        color: "#20262E",
+
+        fontSize: 16
+    },
+
+
+    botao: {
+        width: "100%",
+
+        minHeight: 52,
+
+        backgroundColor: "#252B33",
+
+        borderRadius: 9,
+
+        justifyContent: "center",
+        alignItems: "center",
+
+        marginTop: 7
+    },
+
+
+    botaoPressionado: {
+        opacity: 0.85
+    },
+
+
+    textoBotao: {
+        color: "#FFFFFF",
+
+        fontSize: 16,
+
+        fontWeight: "600"
+    },
+
+
+    areaCadastro: {
+        flexDirection: "row",
+
+        justifyContent: "center",
+        alignItems: "center",
+
+        flexWrap: "wrap",
+
+        marginTop: 22
+    },
+
+
+    textoCadastro: {
+        color: "#6B7280",
+
+        fontSize: 13,
+
+        marginRight: 5
+    },
+
+
+    botaoCadastro: {
+        color: "#C96A22",
+
+        fontSize: 13,
+
+        fontWeight: "700"
+    }
 
 });
