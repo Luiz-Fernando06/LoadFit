@@ -1,34 +1,25 @@
-// database/MotoristaDAO.js
-import { getDb } from './db';
+const API_URL = "http://localhost:3001";
 
 export async function criarMotorista({ nome, cnh, telefone }) {
-  const db = await getDb();
-  const result = await db.runAsync(
-    'INSERT INTO motorista (nome, cnh, telefone) VALUES (?, ?, ?)',
-    [nome, cnh, telefone ?? null]
-  );
-  return result.lastInsertRowId;
+  const res = await fetch(`${API_URL}/cadmotorista`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ nome, cnh, telefone }),
+  });
+
+  if (!res.ok) {
+    throw new Error("Erro ao criar motorista");
+  }
+
+  return res.json();
 }
 
 export async function listarMotoristas() {
-  const db = await getDb();
-  return db.getAllAsync('SELECT * FROM motorista ORDER BY nome');
-}
+  const res = await fetch(`${API_URL}/motoristas`);
 
-export async function buscarMotoristaPorId(id) {
-  const db = await getDb();
-  return db.getFirstAsync('SELECT * FROM motorista WHERE id = ?', [id]);
-}
+  if (!res.ok) {
+    throw new Error("Erro ao listar motoristas");
+  }
 
-export async function atualizarMotorista(id, { nome, cnh, telefone }) {
-  const db = await getDb();
-  await db.runAsync(
-    'UPDATE motorista SET nome = ?, cnh = ?, telefone = ? WHERE id = ?',
-    [nome, cnh, telefone ?? null, id]
-  );
-}
-
-export async function excluirMotorista(id) {
-  const db = await getDb();
-  await db.runAsync('DELETE FROM motorista WHERE id = ?', [id]);
+  return res.json();
 }

@@ -1,35 +1,25 @@
-// database/ClienteDAO.js
-import { getDb } from './db';
+const API_URL = "http://localhost:3001";
 
 export async function criarCliente({ nome, endereco, telefone }) {
-  const db = await getDb();
-  const result = await db.runAsync(
-    'INSERT INTO cliente (nome, endereco, telefone) VALUES (?, ?, ?)',
-    [nome, endereco ?? null, telefone ?? null]
-  );
-  return result.lastInsertRowId;
+  const res = await fetch(`${API_URL}/cadcliente`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ nome, endereco, telefone }),
+  });
+
+  if (!res.ok) {
+    throw new Error("Erro ao criar cliente");
+  }
+
+  return res.json();
 }
 
 export async function listarClientes() {
-  const db = await getDb();
-  return db.getAllAsync('SELECT * FROM cliente ORDER BY nome');
-}
+  const res = await fetch(`${API_URL}/clientes`);
 
-export async function buscarClientePorId(id) {
-  const db = await getDb();
-  return db.getFirstAsync('SELECT * FROM cliente WHERE id = ?', [id]);
-}
+  if (!res.ok) {
+    throw new Error("Erro ao listar clientes");
+  }
 
-export async function atualizarCliente(id, { nome, endereco, telefone }) {
-  const db = await getDb();
-  await db.runAsync(
-    'UPDATE cliente SET nome = ?, endereco = ?, telefone = ? WHERE id = ?',
-    [nome, endereco ?? null, telefone ?? null, id]
-  );
-}
-
-export async function excluirCliente(id) {
-  const db = await getDb();
-  // Os materiais desse cliente são apagados junto (ON DELETE CASCADE no schema).
-  await db.runAsync('DELETE FROM cliente WHERE id = ?', [id]);
+  return res.json();
 }
