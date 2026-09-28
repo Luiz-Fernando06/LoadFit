@@ -1,0 +1,30 @@
+# Dependências
+node_modules/
+
+# Expo
+.expo/
+dist/
+web-build/
+expo-env.d.ts
+
+# Variáveis de ambiente
+.env
+.env.local
+.env*.local
+
+# Android / iOS gerados
+android/
+ios/
+.kotlin/
+
+# Logs
+*.log
+npm-debug.*
+yarn-debug.*
+yarn-error.*
+
+# Sistema
+.DS_Store
+
+# TypeScript
+*.tsbuildinfo
