@@ -4,6 +4,7 @@ const validarCliente = require("./clienteValidador");
 const validarMotorista = require("./motoristaValidador");
 const validarCaminhao = require("./caminhaoValidador");
 const validarMaterial = require("./validador/materialValidador");
+const validarUsuario = require("./usuarioValidador");
 const servidor = express();
 
 const PORTA = 3001;
@@ -96,7 +97,24 @@ servidor.post("/materiais", (req, res) => {
     });
 });
 
+// USUÁRIO
+servidor.post("/usuarios", (req, res) => {
 
+    const erros = validarUsuario(req.body);
+
+    if (erros.length > 0) {
+        return res.status(400).json({
+            sucesso: false,
+            erros: erros
+        });
+    }
+
+    res.status(200).json({
+        sucesso: true,
+        mensagem: "Usuário validado com sucesso!",
+        dados: req.body
+    });
+});
 servidor.listen(PORTA, () => {
     console.log(`Servidor LoadFit rodando na porta ${PORTA}.`);
 });
