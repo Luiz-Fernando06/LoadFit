@@ -112,6 +112,156 @@ app.post("/login", (req, res) => {
   });
 });
 
+// ---------- CLIENTE ----------
+app.put("/clientes/:id", (req, res) => {
+  const id = req.params.id;
+  const { nome, endereco, telefone } = req.body;
+
+  const sql = "UPDATE cliente SET nome = ?, endereco = ?, telefone = ? WHERE id = ?";
+
+  db.query(sql, [nome, endereco, telefone, id], (err, result) => {
+    if (err) {
+      console.error("Erro ao atualizar cliente:", err);
+      return res.status(500).json({ message: "Erro ao atualizar." });
+    }
+    res.json({ message: "Cliente atualizado!" });
+  });
+});
+
+app.delete("/clientes/:id", (req, res) => {
+  const id = req.params.id;
+
+  db.query("DELETE FROM cliente WHERE id = ?", [id], (err, result) => {
+    if (err) {
+      console.error("Erro ao excluir cliente:", err);
+      return res.status(500).json({ message: "Erro ao excluir." });
+    }
+    res.json({ message: "Cliente excluído!" });
+  });
+});
+
+// ---------- MOTORISTA ----------
+app.put("/motoristas/:id", (req, res) => {
+  const id = req.params.id;
+  const { nome, cnh, telefone } = req.body;
+
+  const sql = "UPDATE motorista SET nome = ?, cnh = ?, telefone = ? WHERE id = ?";
+
+  db.query(sql, [nome, cnh, telefone, id], (err, result) => {
+    if (err) {
+      console.error("Erro ao atualizar motorista:", err);
+      return res.status(500).json({ message: "Erro ao atualizar." });
+    }
+    res.json({ message: "Motorista atualizado!" });
+  });
+});
+
+app.delete("/motoristas/:id", (req, res) => {
+  const id = req.params.id;
+
+  db.query("DELETE FROM motorista WHERE id = ?", [id], (err, result) => {
+    if (err) {
+      console.error("Erro ao excluir motorista:", err);
+      return res.status(500).json({ message: "Erro ao excluir." });
+    }
+    res.json({ message: "Motorista excluído!" });
+  });
+});
+
+// ---------- CAMINHAO ----------
+app.put("/caminhoes/:id", (req, res) => {
+  const id = req.params.id;
+  const { placa, modelo, capacidade_maxima, motorista_id } = req.body;
+
+  const sql = "UPDATE caminhao SET placa = ?, modelo = ?, capacidade_maxima = ?, motorista_id = ? WHERE id = ?";
+
+  db.query(sql, [placa, modelo, capacidade_maxima, motorista_id || null, id], (err, result) => {
+    if (err) {
+      console.error("Erro ao atualizar caminhão:", err);
+      return res.status(500).json({ message: "Erro ao atualizar." });
+    }
+    res.json({ message: "Caminhão atualizado!" });
+  });
+});
+
+app.delete("/caminhoes/:id", (req, res) => {
+  const id = req.params.id;
+
+  db.query("DELETE FROM caminhao WHERE id = ?", [id], (err, result) => {
+    if (err) {
+      console.error("Erro ao excluir caminhão:", err);
+      return res.status(500).json({ message: "Erro ao excluir." });
+    }
+    res.json({ message: "Caminhão excluído!" });
+  });
+});
+
+// ---------- MATERIAL ----------
+app.put("/materiais/:id", (req, res) => {
+  const id = req.params.id;
+  const { descricao, peso, cliente_id, caminhao_id } = req.body;
+
+  const sql = "UPDATE material SET descricao = ?, peso = ?, cliente_id = ?, caminhao_id = ? WHERE id = ?";
+
+  db.query(sql, [descricao, peso, cliente_id, caminhao_id || null, id], (err, result) => {
+    if (err) {
+      console.error("Erro ao atualizar material:", err);
+      return res.status(500).json({ message: "Erro ao atualizar." });
+    }
+    res.json({ message: "Material atualizado!" });
+  });
+});
+
+app.delete("/materiais/:id", (req, res) => {
+  const id = req.params.id;
+
+  db.query("DELETE FROM material WHERE id = ?", [id], (err, result) => {
+    if (err) {
+      console.error("Erro ao excluir material:", err);
+      return res.status(500).json({ message: "Erro ao excluir." });
+    }
+    res.json({ message: "Material excluído!" });
+  });
+});
+
+// ---------- USUARIO ----------
+app.get("/usuarios", (req, res) => {
+  db.query("SELECT id, nome, email FROM usuario ORDER BY nome", (err, resultados) => {
+    if (err) {
+      console.error("Erro ao buscar usuarios:", err);
+      return res.status(500).json({ message: "Erro ao buscar os dados." });
+    }
+    res.json(resultados);
+  });
+});
+
+app.put("/usuarios/:id", (req, res) => {
+  const id = req.params.id;
+  const { nome, email, senha } = req.body;
+
+  const sql = "UPDATE usuario SET nome = ?, email = ?, senha = ? WHERE id = ?";
+
+  db.query(sql, [nome, email, senha, id], (err, result) => {
+    if (err) {
+      console.error("Erro ao atualizar usuario:", err);
+      return res.status(500).json({ message: "Erro ao atualizar." });
+    }
+    res.json({ message: "Usuário atualizado!" });
+  });
+});
+
+app.delete("/usuarios/:id", (req, res) => {
+  const id = req.params.id;
+
+  db.query("DELETE FROM usuario WHERE id = ?", [id], (err, result) => {
+    if (err) {
+      console.error("Erro ao excluir usuario:", err);
+      return res.status(500).json({ message: "Erro ao excluir." });
+    }
+    res.json({ message: "Usuário excluído!" });
+  });
+});
+
 app.listen(PORT, () => {
   console.log(`Servidor rodando na porta ${PORT}`);
 });
