@@ -161,7 +161,7 @@ export default function TelaMenu({ navigation }) {
                                 pressed && styles.cardPressionado
                             ]}
                             onPress={() =>
-                                funcionalidadeEmBreve("Materiais")
+                                navigation.navigate("CadastroMaterial")
                             }
                         >
 
@@ -199,7 +199,7 @@ export default function TelaMenu({ navigation }) {
                                 pressed && styles.cardPressionado
                             ]}
                             onPress={() =>
-                                funcionalidadeEmBreve("Clientes")
+                                navigation.navigate("CadastroCliente")
                             }
                         >
 
@@ -237,7 +237,7 @@ export default function TelaMenu({ navigation }) {
                                 pressed && styles.cardPressionado
                             ]}
                             onPress={() =>
-                                funcionalidadeEmBreve("Motoristas")
+                                navigation.navigate("CadastroMotorista")
                             }
                         >
 
@@ -262,6 +262,38 @@ export default function TelaMenu({ navigation }) {
 
                     </View>
 
+                    {/* Gestão de pedidos */}
+                    <View style={styles.areaPedidos}>
+
+                        <View style={styles.pedidosTextoArea}>
+
+                            <Text style={styles.pedidosTitulo}>
+                                Gestão de pedidos
+                            </Text>
+
+                            <Text style={styles.pedidosDescricao}>
+                                Cadastre e gerencie os pedidos dos clientes que serão utilizados posteriormente na organização das cargas.
+                            </Text>
+
+                        </View>
+
+                        <Pressable
+                            style={({ pressed }) => [
+                                styles.botaoPedidos,
+                                pressed && styles.botaoPressionado
+                            ]}
+                            onPress={() =>
+                                navigation.navigate("CadastroPedido")
+                            }
+                        >
+
+                            <Text style={styles.textoBotaoPedidos}>
+                                Gerenciar pedidos
+                            </Text>
+
+                        </Pressable>
+
+                    </View>
 
                     {/* Organizador de carga */}
                     <View style={styles.areaOrganizar}>
@@ -285,7 +317,7 @@ export default function TelaMenu({ navigation }) {
                                 pressed && styles.botaoPressionado
                             ]}
                             onPress={() =>
-                                funcionalidadeEmBreve("Organizar Carga")
+                                navigation.navigate("OrganizarCarga")
                             }
                         >
 
@@ -590,6 +622,83 @@ const styles = StyleSheet.create({
         marginTop: 20
     },
 
+
+    /*
+    ÁREA DE PEDIDOS
+    */
+    areaPedidos: {
+        marginTop: 30,
+
+        backgroundColor: "#ffffff",
+
+        borderRadius: 12,
+
+        padding: 24,
+
+        borderWidth: 1,
+        borderColor: "#7a3f074d",
+
+        flexDirection: "row",
+
+        justifyContent: "space-between",
+        alignItems: "center",
+
+        flexWrap: "wrap",
+
+        gap: 20
+    },
+
+
+    pedidosTextoArea: {
+        flex: 1,
+
+        minWidth: 230
+    },
+
+
+    pedidosTitulo: {
+        color: "#252B33",
+
+        fontSize: 19,
+
+        fontWeight: "700",
+
+        marginBottom: 6
+    },
+
+
+    pedidosDescricao: {
+        maxWidth: 600,
+
+        color: "#6B7280",
+
+        fontSize: 13,
+
+        lineHeight: 20
+    },
+
+
+    botaoPedidos: {
+        minHeight: 48,
+
+        paddingHorizontal: 24,
+
+        backgroundColor: "#C96A22",
+
+        borderRadius: 9,
+
+        justifyContent: "center",
+        alignItems: "center"
+    },
+
+
+    textoBotaoPedidos: {
+        color: "#FFFFFF",
+
+        fontSize: 14,
+
+        fontWeight: "700"
+    },
 
     /*
         ÁREA DE ORGANIZAR CARGA
