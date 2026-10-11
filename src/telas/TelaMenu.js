@@ -329,6 +329,39 @@ export default function TelaMenu({ navigation }) {
 
                     </View>
 
+                    {/* Criar rotas */}
+                    <View style={styles.areaRotas}>
+
+                        <View style={styles.rotasTextoArea}>
+
+                            <Text style={styles.rotasTitulo}>
+                                Criar rotas
+                            </Text>
+
+                            <Text style={styles.rotasDescricao}>
+                                Crie e organize as rotas de entrega para os pedidos cadastrados.
+                            </Text>
+
+                        </View>
+
+                        <Pressable
+                            style={({ pressed }) => [
+                                styles.botaoRotas,
+                                pressed && styles.botaoPressionado
+                            ]}
+                            onPress={() =>
+                                navigation.navigate("CriarRota")
+                            }
+                        >
+
+                            <Text style={styles.textoBotaoRotas}>
+                                Criar rota
+                            </Text>
+
+                        </Pressable>
+
+                    </View>
+
                 </View>
 
             </ScrollView>
@@ -777,6 +810,83 @@ const styles = StyleSheet.create({
 
     botaoPressionado: {
         opacity: 0.8
+    },
+
+    /*
+    ÁREA DE CRIAR ROTAS
+*/
+    areaRotas: {
+        marginTop: 20,
+
+        backgroundColor: "#FFF9F5",
+
+        borderRadius: 12,
+
+        padding: 24,
+
+        borderWidth: 1,
+        borderColor: "#7a3f074d",
+
+        flexDirection: "row",
+
+        justifyContent: "space-between",
+        alignItems: "center",
+
+        flexWrap: "wrap",
+
+        gap: 20
+    },
+
+
+    rotasTextoArea: {
+        flex: 1,
+
+        minWidth: 230
+    },
+
+
+    rotasTitulo: {
+        color: "#252B33",
+
+        fontSize: 19,
+
+        fontWeight: "700",
+
+        marginBottom: 6
+    },
+
+
+    rotasDescricao: {
+        maxWidth: 600,
+
+        color: "#6B7280",
+
+        fontSize: 13,
+
+        lineHeight: 20
+    },
+
+
+    botaoRotas: {
+        minHeight: 48,
+
+        paddingHorizontal: 24,
+
+        backgroundColor: "#C96A22",
+
+        borderRadius: 9,
+
+        justifyContent: "center",
+        alignItems: "center"
+    },
+
+
+    textoBotaoRotas: {
+        color: "#FFFFFF",
+
+        fontSize: 14,
+
+        fontWeight: "700"
     }
 
 });

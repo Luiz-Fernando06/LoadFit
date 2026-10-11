@@ -11,9 +11,9 @@ import {
   Image
 } from "react-native";
 
+
 export default function TelaCadastroCaminhao({ navigation }) {
   const [placa, setPlaca] = useState("");
-  const [marca, setMarca] = useState("");
   const [modelo, setModelo] = useState("");
   const [capacidade, setCapacidade] = useState("");
 
@@ -23,14 +23,13 @@ export default function TelaCadastroCaminhao({ navigation }) {
   const telaGrande = width >= 768;
 
   const handleSalvar = () => {
-    if (!placa || !marca || !modelo || !capacidade) {
+    if (!placa || !modelo || !capacidade) {
       Alert.alert("Atenção", "Preencha todos os campos obrigatórios.");
       return;
     }
 
     const dadosCaminhao = {
       placa,
-      marca,
       modelo,
       capacidade: parseFloat(capacidade),
     };

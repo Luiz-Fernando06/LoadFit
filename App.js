@@ -11,6 +11,7 @@ import TelaCadastroCliente from "./src/telas/TelaCadastroCliente";
 import TelaCadastroMotorista from "./src/telas/TelaCadastroMotorista";
 import OrganizarCarga from "./src/OrganizarCarga";
 import Pedidos from "./src/Pedidos";
+import CriarRotas from "./src/CriarRotas";
 
 const Stack = createNativeStackNavigator();
 
@@ -33,6 +34,8 @@ export default function App() {
         <Stack.Screen name="CadastroMotorista" component={TelaCadastroMotorista} />
         <Stack.Screen name="OrganizarCarga" component={OrganizarCarga} />
         <Stack.Screen name="CadastroPedido" component={Pedidos} />
+        <Stack.Screen  name="CriarRota" component={CriarRotas}/>
+        
       </Stack.Navigator>
     </NavigationContainer>
   );
