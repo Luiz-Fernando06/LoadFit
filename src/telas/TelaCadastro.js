@@ -1,91 +1,137 @@
-import { useState } from "react";
+import { useState } from "react"; //Guarda as informaçoes
 
 import {
-    View,
-    Text,
-    TextInput,
-    Pressable,
-    StyleSheet,
-    Alert,
-    KeyboardAvoidingView,
-    Platform,
-    ScrollView,
-    useWindowDimensions,
-    Image
+    View, // Conteiner, é como se fosse o div do html
+
+    Text, //Exibe os textos
+
+    TextInput, //Cria campos para digitar
+
+    Pressable, //É como se fosse o botao, so que com mais facilidade de personalizar, respondem a toques ou cliques
+
+    StyleSheet, // É o componente que organiza todo o estilo da interface, é dentro dele que a interface é feita
+
+    KeyboardAvoidingView, //Componente para responsividade do app, que impede que o teclado do celular oculte algum elemento da tela
+
+    Platform, // Identifica qual plataforma esta sendo excutada o app
+
+    ScrollView, //Permite rolar a tela quando o conteúdo não cabe.
+
+    useWindowDimensions, //Obtém as dimensões atuais da janela.
+
+    Image //Exibe imagens
+
 } from "react-native";
 
-import { SafeAreaView } from "react-native-safe-area-context";
-import { supabase, supabaseConfigurado } from "../servicos/supabase";
+//ajuda a manter o conteúdo dentro da área segura da tela.
+import { SafeAreaView } from "react-native-safe-area-context"; 
 
+//importa o cliente do Supabase e uma variável de controle da configuração.
+//Onde permite que o aplicativo se comunique com o servidor do Supabase
+import { supabase, supabaseConfigurado } from "../servicos/supabase"; 
 
+/*
+Aqui to criando uma função que pode ser importada por outros arquivos e que recebe
+o objeto navigation, que me permite navegar entre outras telas(arquivos).
+*/
 export default function TelaCadastro({ navigation }) {
 
+    /*
+    Aqui crio uma variavel que contem dois elementos, onde uma guarda o estado atual e 
+    outro a alteração desse estado, onde essas variaveis estão sendo atribuidas ao useState
+    com o valor inicial de uma string vazia e outro com o valor logico sendo falso.
+    */
     const [nome, setNome] = useState("");
     const [email, setEmail] = useState("");
     const [senha, setSenha] = useState("");
-    const [carregando, setCarregando] = useState(false);
-    const [mensagem, setMensagem] = useState("");
+    const [carregando, setCarregando] = useState(false); //Controla se o processo de cadastro esta em andamento ou não
+    const [mensagem, setMensagem] = useState(""); //Guarda as mensagens de instruçoes do app
 
-    // Retorna a largura atual da tela
-    const { width } = useWindowDimensions();
+    // Retorna apenas a largura atual da tela
+    const dimensoes = useWindowDimensions();
+    const largura = dimensoes.width;
 
-    // Consideramos desktop/tablet telas maiores que 768px
-    const isDesktop = width >= 768;
+    // Aqui to querendo saber se vai ser desktop/tablet ou não, considerando que as telas dos desktop/tablet são maiores que 768px
+    const isDesktop = largura >= 768;
 
-
+    /*
+    Aqui to criando uma função que vai funcionar como botao, que pode guarda 
+    operaçõs assicronas, caso demore cadastrar um usuario
+    */
     async function cadastrar() {
 
+        //A cada execução do botão cadstrar ele limpa a mensagem anterior
         setMensagem("");
+
+        //Trim() -> remove espaço do começo e do final da frase
 
         if (!nome.trim() || !email.trim() || !senha.trim()) {
             setMensagem("Preencha o nome, e-mail e a senha.");
             return;
         }
 
+        //include() -> verifica se uma string possui determinado trecho
+
         if (!email.includes("@") || !email.includes(".")) {
             setMensagem("Digite um endereço de e-mail válido.");
             return;
         }
+
+        //length -> conta o comprimento da variavel
 
         if (senha.length < 6) {
             setMensagem("A senha deve possuir pelo menos 6 caracteres.");
             return;
         }
 
+        //Caso a configuração com o servidor não tenha sido feita ainda
         if (!supabaseConfigurado) {
-            setMensagem("Supabase não configurado. Confira o arquivo .env e reinicie o Expo.");
+            setMensagem("Erro no servidor da aplicação! Os moderadores estão resolvendo.");
             return;
         }
 
+        //Estado de cadastro em andamento
         setCarregando(true);
 
+        /*
+        Aqui eu to criando uma exceção, com uma variavel que pega os dados do usuario e o erro caso a atentificação falhar,
+        onde dentro dela tenho o cliente supabase com seus recursos de autentificação e solicito a criação de uma conta, 
+        onde o comando await aguarda a conclusão da operação assíncrona antes de executar a próxima linha.  
+        */
         try {
             const { data, error } = await supabase.auth.signUp({
-                email: email.trim().toLowerCase(),
+                email: email.trim().toLowerCase(), // toLowerCase -> Converte as letras maiusculas em minusculas
                 password: senha,
                 options: {
-                    data: { nome: nome.trim() }
+                    data: { nome: nome.trim() } //Aqui envio o nome que é uma coisas a mais que tem no cadastro alem de email e senha
                 }
             });
 
-            if (error) throw error;
+            if (error) throw error; //Se o Supabase retornar um erro, o código o lança com throw.
+            //Isso interrompe a execução normal do bloco try e transfere o controle para o catch.
 
+            //Se a autentificação foi feita com sucesso vai oferecer uma sessão para o usuario supabase e direciona para o menu
             if (data.session) {
                 navigation.replace("Menu");
             } else {
                 setMensagem("Conta criada. Confirme seu e-mail para depois entrar no sistema.");
             }
-        } catch (erro) {
-            console.error("Erro ao criar conta:", erro);
-            const texto = (erro.message || "").toLowerCase();
-            if (texto.includes("already registered") || texto.includes("already been registered")) {
-                setMensagem("Já existe uma conta cadastrada com esse e-mail.");
-            } else if (texto.includes("rate limit")) {
-                setMensagem("Muitas tentativas de cadastro. Aguarde alguns minutos e tente novamente.");
-            } else {
-                setMensagem(erro.message || "Não foi possível criar a conta.");
-            }
+        } 
+catch (erro) {
+    console.error("Erro ao criar conta:", erro);
+
+    const texto = (erro.message || "").toLowerCase();
+
+    if (
+        texto.includes("already registered") ||
+        texto.includes("already been registered")
+    ) {
+        setMensagem("Já existe uma conta cadastrada com esse e-mail.");
+    } else {
+        setMensagem("Não foi possível criar a conta. Tente novamente mais tarde.");
+    }
         } finally {
+            //Caso tudo falhe ou de certo volta ao estado normal do cadastro
             setCarregando(false);
         }
     }
@@ -95,11 +141,17 @@ export default function TelaCadastro({ navigation }) {
 
         <SafeAreaView style={styles.container}>
 
+            {/*Se a plataforma for iOS, o comportamento do teclado será "padding". Nas demais plataformas, essa propriedade recebe undefined.*/}
             <KeyboardAvoidingView
                 style={styles.keyboard}
                 behavior={Platform.OS === "ios" ? "padding" : undefined}
             >
 
+                {/* 
+                    1. contentContainerStyle: aplica estilo ao contêiner interno do conteúdo.
+                    2. keyboardShouldPersistTaps="handled": permite que toques sejam tratados pelos componentes apropriados mesmo com o teclado aberto.
+                    3. showsVerticalScrollIndicator={false}: oculta o indicador vertical de rolagem. 
+                */}
                 <ScrollView
                     contentContainerStyle={styles.scrollContent}
                     keyboardShouldPersistTaps="handled"
