@@ -61,7 +61,7 @@ export default function TelaCadastroPedido({ navigation }) {
   const carregarOpcoes = useCallback(async () => {
     setCarregandoOpcoes(true);
     if (!supabaseConfigurado) {
-      mostrarMensagem("Configure a URL e a chave do Supabase no arquivo .env e reinicie o Expo.", "erro");
+      mostrarMensagem("Erro no servidor da aplicação! Os moderadores estão resolvendo.", "erro");
       setCarregandoOpcoes(false);
       return;
     }
@@ -93,10 +93,9 @@ export default function TelaCadastroPedido({ navigation }) {
       if (materiaisResposta.error) throw materiaisResposta.error;
       setClientesDisponiveis(clientesResposta.data || []);
       setMateriaisDisponiveis(materiaisResposta.data || []);
-      mostrarMensagem("Clientes e materiais carregados do Supabase.", "sucesso");
     } catch (erro) {
       console.error("Erro ao carregar opções do pedido:", erro);
-      mostrarMensagem(`Não foi possível buscar clientes e materiais: ${erro.message || "verifique a conexão e as políticas RLS."}`, "erro");
+      mostrarMensagem(`Não foi possível buscar clientes e materiais`, "erro");
     } finally {
       setCarregandoOpcoes(false);
     }
@@ -173,7 +172,7 @@ export default function TelaCadastroPedido({ navigation }) {
     }
 
     if (!supabaseConfigurado) {
-      mostrarMensagem("Supabase não configurado. Confira o arquivo .env.", "erro");
+      mostrarMensagem("Erro no servidor da aplicação! Os moderadores estão resolvendo.", "erro");
       return;
     }
 
@@ -216,7 +215,7 @@ export default function TelaCadastroPedido({ navigation }) {
         throw erroItens;
       }
 
-      mostrarMensagem(`Pedido #${pedidoCriadoId} salvo no Supabase com sucesso!`, "sucesso");
+      mostrarMensagem(`Pedido #${pedidoCriadoId} salvo`, "sucesso");
       setCliente(null);
       setDataPrevista(hojeBR());
       setObservacao("");

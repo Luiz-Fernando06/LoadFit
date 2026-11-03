@@ -1,892 +1,475 @@
-import React, { useState } from "react";
+
+import React, { useCallback, useState } from "react";
 
 import {
     View,
     Text,
+    TextInput,
     Pressable,
+    ScrollView,
     StyleSheet,
     Alert,
-    ScrollView,
-    Modal,
-    useWindowDimensions
+    ActivityIndicator
 } from "react-native";
 
 import { SafeAreaView } from "react-native-safe-area-context";
+import { useFocusEffect } from "@react-navigation/native";
 
+import {
+    supabase,
+    supabaseConfigurado
+} from "./servicos/supabase";
 
-export default function TelaCriarRota({ navigation }) {
+export default function CriarRotas({ navigation }) {
 
-    const { width } = useWindowDimensions();
+    const [nomeRota, setNomeRota] = useState("");
 
-    const telaGrande = width >= 768;
+    const [cargas, setCargas] = useState([]);
 
+    const [cargaSelecionada, setCargaSelecionada] = useState(null);
 
-    const [nomeRota, setNomeRota] = useState(
-        "Rota 01 - Niterói"
-    );
+    const [pedidos, setPedidos] = useState([]);
 
-    const [dataRota, setDataRota] = useState(
-        "05/10/2026"
-    );
+    const [carregando, setCarregando] = useState(false);
 
+    const [salvando, setSalvando] = useState(false);
 
-    const [caminhao, setCaminhao] = useState({
-        id: 1,
-        nome: "Caminhão ABC-1234"
-    });
+    // Busca as cargas cadastradas.
+    const carregarCargas = useCallback(async () => {
 
+        try {
 
-    const [motorista, setMotorista] = useState({
-        id: 1,
-        nome: "João da Silva"
-    });
+            if (!supabaseConfigurado) {
+                throw new Error("Supabase não configurado.");
+            }
 
+            setCarregando(true);
 
-    /*
-        Pedidos de teste.
+            const { data: sessao, error: erroUsuario } =
+                await supabase.auth.getUser();
 
-        A ordem do array representa
-        a ordem de entrega.
-    */
-    const [pedidos, setPedidos] = useState([
+            if (erroUsuario) throw erroUsuario;
 
-        {
-            id: 1025,
+            if (!sessao.user) {
+                throw new Error("Faça login novamente.");
+            }
 
-            cliente: "Gerdau",
+            const { data, error } = await supabase
+                .from("cargas")
+                .select("*")
+                .eq("user_id", sessao.user.id)
+                .order("criado_em", { ascending: false });
 
-            local: "Niterói - RJ",
+            if (error) throw error;
 
-            dataPrevista: "05/10/2026",
+            setCargas(data || []);
 
-            observacao:
-                "Entregar no setor de recebimento.",
+        } catch (erro) {
 
-            pesoTotal: 2000,
+            Alert.alert("Erro", erro.message);
 
-            materiais: [
-                {
-                    nome: "Vergalhão",
+        } finally {
 
-                    quantidade: 100,
+            setCarregando(false);
 
-                    pesoUnitario: 20,
-
-                    pesoTotal: 2000
-                }
-            ]
-        },
-
-        {
-            id: 1026,
-
-            cliente: "Metalúrgica ABC",
-
-            local: "São Gonçalo - RJ",
-
-            dataPrevista: "05/10/2026",
-
-            observacao:
-                "Entregar durante o horário comercial.",
-
-            pesoTotal: 1500,
-
-            materiais: [
-                {
-                    nome: "Tubo",
-
-                    quantidade: 50,
-
-                    pesoUnitario: 30,
-
-                    pesoTotal: 1500
-                }
-            ]
-        },
-
-        {
-            id: 1027,
-
-            cliente: "Empresa XYZ",
-
-            local: "Niterói - RJ",
-
-            dataPrevista: "05/10/2026",
-
-            observacao:
-                "Conferir material antes da entrega.",
-
-            pesoTotal: 800,
-
-            materiais: [
-                {
-                    nome: "Chapa",
-
-                    quantidade: 32,
-
-                    pesoUnitario: 25,
-
-                    pesoTotal: 800
-                }
-            ]
         }
 
-    ]);
+    }, []);
 
+    useFocusEffect(
+        useCallback(() => {
+            carregarCargas();
+        }, [carregarCargas])
+    );
 
-    const [pedidoSelecionado, setPedidoSelecionado] =
-        useState(null);
+    // Seleciona uma carga e busca seus pedidos.
+    async function selecionarCarga(carga) {
 
+        try {
 
-    /*
-        Soma o peso de todos os pedidos
-        atualmente presentes na rota.
-    */
+            setCarregando(true);
+
+            setCargaSelecionada(carga);
+            setPedidos([]);
+
+            const { data: sessao, error: erroUsuario } =
+                await supabase.auth.getUser();
+
+            if (erroUsuario) throw erroUsuario;
+
+            const { data: vinculos, error } = await supabase
+                .from("carga_pedidos")
+                .select("pedido_id")
+                .eq("carga_id", carga.id)
+                .eq("user_id", sessao.user.id);
+
+            if (error) throw error;
+
+            const ids = (vinculos || []).map(
+                item => item.pedido_id
+            );
+
+            if (ids.length === 0) {
+                return;
+            }
+
+            const { data: pedidosBanco, error: erroPedidos } =
+                await supabase
+                    .from("pedidos")
+                    .select("*")
+                    .in("id", ids)
+                    .eq("user_id", sessao.user.id);
+
+            if (erroPedidos) throw erroPedidos;
+
+            const { data: clientes, error: erroClientes } =
+                await supabase
+                    .from("clientes")
+                    .select("id, nome, endereco, cidade, estado")
+                    .eq("user_id", sessao.user.id);
+
+            if (erroClientes) throw erroClientes;
+
+            const mapaClientes = new Map(
+                (clientes || []).map(cliente => [
+                    String(cliente.id),
+                    cliente
+                ])
+            );
+
+            const pedidosComCliente = (pedidosBanco || []).map(pedido => ({
+                ...pedido,
+                cliente: mapaClientes.get(String(pedido.cliente_id))
+            }));
+
+            setPedidos(pedidosComCliente);
+
+        } catch (erro) {
+
+            Alert.alert("Erro", erro.message);
+
+        } finally {
+
+            setCarregando(false);
+
+        }
+
+    }
+
+    // Reorganiza a ordem de entrega.
+    function moverPedido(index, direcao) {
+
+        const novaLista = [...pedidos];
+
+        const novoIndex = index + direcao;
+
+        if (novoIndex < 0 || novoIndex >= novaLista.length) {
+            return;
+        }
+
+        const temporario = novaLista[index];
+
+        novaLista[index] = novaLista[novoIndex];
+
+        novaLista[novoIndex] = temporario;
+
+        setPedidos(novaLista);
+
+    }
+
+    // Calcula o peso total dos pedidos.
     const pesoTotal = pedidos.reduce(
         (total, pedido) =>
-            total + pedido.pesoTotal,
+            total + Number(pedido.peso_total || 0),
         0
     );
 
-
-    /*
-        Move o pedido para cima.
-    */
-    function moverParaCima(index) {
-
-        if (index === 0) {
-            return;
-        }
-
-        const novaLista = [...pedidos];
-
-        const pedidoAtual = novaLista[index];
-
-        novaLista[index] =
-            novaLista[index - 1];
-
-        novaLista[index - 1] =
-            pedidoAtual;
-
-        setPedidos(novaLista);
-    }
-
-
-    /*
-        Move o pedido para baixo.
-    */
-    function moverParaBaixo(index) {
-
-        if (index === pedidos.length - 1) {
-            return;
-        }
-
-        const novaLista = [...pedidos];
-
-        const pedidoAtual = novaLista[index];
-
-        novaLista[index] =
-            novaLista[index + 1];
-
-        novaLista[index + 1] =
-            pedidoAtual;
-
-        setPedidos(novaLista);
-    }
-
-
-    /*
-        Abre os detalhes do pedido.
-    */
-    function abrirDetalhes(pedido) {
-
-        setPedidoSelecionado(pedido);
-
-    }
-
-
-    /*
-        Fecha os detalhes.
-    */
-    function fecharDetalhes() {
-
-        setPedidoSelecionado(null);
-
-    }
-
-
-    /*
-        Criação da rota.
-    */
-    function criarRota() {
+    // Salva a rota no Supabase.
+    async function criarRota() {
 
         if (!nomeRota.trim()) {
-
-            Alert.alert(
-                "Atenção",
-                "Informe o nome da rota."
-            );
-
+            Alert.alert("Atenção", "Informe o nome da rota.");
             return;
         }
 
+        if (!cargaSelecionada) {
+            Alert.alert("Atenção", "Selecione uma carga.");
+            return;
+        }
 
         if (pedidos.length === 0) {
-
-            Alert.alert(
-                "Atenção",
-                "Adicione pelo menos um pedido à rota."
-            );
-
+            Alert.alert("Atenção", "A carga não possui pedidos.");
             return;
         }
 
+        try {
 
-        /*
-            Aqui futuramente enviaremos
-            os dados para a API.
-        */
+            setSalvando(true);
 
-        const rota = {
+            const { data: sessao, error: erroUsuario } =
+                await supabase.auth.getUser();
 
-            nome: nomeRota,
+            if (erroUsuario) throw erroUsuario;
 
-            data: dataRota,
-
-            caminhao_id: caminhao.id,
-
-            motorista_id: motorista.id,
-
-            peso_total: pesoTotal,
-
-            pedidos: pedidos.map(
-                (pedido, index) => ({
-
-                    pedido_id: pedido.id,
-
-                    ordem_entrega: index + 1
-
+            // Cria o registro principal da rota.
+            const { data: rota, error } = await supabase
+                .from("rotas")
+                .insert({
+                    user_id: sessao.user.id,
+                    carga_id: cargaSelecionada.id,
+                    nome: nomeRota.trim()
                 })
-            )
+                .select()
+                .single();
 
-        };
+            if (error) throw error;
 
+            // Salva os pedidos na ordem escolhida.
+            const pedidosRota = pedidos.map((pedido, index) => ({
+                user_id: sessao.user.id,
+                rota_id: rota.id,
+                pedido_id: pedido.id,
+                ordem_entrega: index + 1
+            }));
 
-        console.log(
-            "ROTA:",
-            rota
-        );
+            const { error: erroVinculo } = await supabase
+                .from("rota_pedidos")
+                .insert(pedidosRota);
 
+            if (erroVinculo) {
 
-        Alert.alert(
-            "Rota criada",
-            "A rota foi criada com sucesso.",
-            [
-                {
-                    text: "OK",
-                    onPress: () =>
-                        navigation.goBack()
-                }
-            ]
-        );
+                // Evita deixar uma rota incompleta.
+                await supabase
+                    .from("rotas")
+                    .delete()
+                    .eq("id", rota.id)
+                    .eq("user_id", sessao.user.id);
+
+                throw erroVinculo;
+            }
+
+            Alert.alert(
+                "Rota criada",
+                "A rota foi salva com sucesso.",
+                [
+                    {
+                        text: "Visualizar rotas",
+                        onPress: () =>
+                            navigation.navigate("GerenciarRotas")
+                    }
+                ]
+            );
+
+        } catch (erro) {
+
+            Alert.alert(
+                "Erro ao criar rota",
+                erro.message
+            );
+
+        } finally {
+
+            setSalvando(false);
+
+        }
 
     }
-
 
     return (
 
         <SafeAreaView style={styles.container}>
 
             <ScrollView
-                contentContainerStyle={styles.scrollContent}
+                contentContainerStyle={styles.conteudo}
                 showsVerticalScrollIndicator={false}
             >
 
-                <View
-                    style={[
-                        styles.content,
-                        telaGrande &&
-                        styles.contentGrande
-                    ]}
-                >
+                <Pressable onPress={() => navigation.goBack()}>
+                    <Text style={styles.voltar}>‹ Voltar</Text>
+                </Pressable>
 
+                <Text style={styles.titulo}>
+                    Criar rota
+                </Text>
 
-                    {/* CABEÇALHO */}
+                <Text style={styles.subtitulo}>
+                    Organize a sequência de entrega dos pedidos.
+                </Text>
 
-                    <View style={styles.header}>
+                {/* NOME DA ROTA */}
 
-                        <View>
+                <View style={styles.card}>
 
-                            <Text style={styles.titulo}>
-                                Criar rota
-                            </Text>
+                    <Text style={styles.secao}>
+                        Dados da rota
+                    </Text>
 
-                            <Text style={styles.subtitulo}>
-                                Organize a sequência de entrega dos pedidos.
-                            </Text>
+                    <Text style={styles.label}>
+                        Nome
+                    </Text>
 
-                        </View>
+                    <TextInput
+                        style={styles.input}
+                        placeholder="Ex.: Rota São Gonçalo"
+                        value={nomeRota}
+                        onChangeText={setNomeRota}
+                    />
 
+                </View>
+
+                {/* SELEÇÃO DA CARGA */}
+
+                <View style={styles.card}>
+
+                    <Text style={styles.secao}>
+                        Selecione uma carga
+                    </Text>
+
+                    {carregando && (
+                        <ActivityIndicator color="#C96A22" />
+                    )}
+
+                    {cargas.map(carga => (
 
                         <Pressable
-                            style={({ pressed }) => [
-                                styles.botaoVoltar,
-                                pressed &&
-                                styles.botaoPressionado
+                            key={String(carga.id)}
+                            style={[
+                                styles.opcao,
+                                cargaSelecionada?.id === carga.id &&
+                                styles.opcaoSelecionada
                             ]}
-                            onPress={() =>
-                                navigation.goBack()
-                            }
+                            onPress={() => selecionarCarga(carga)}
                         >
 
-                            <Text style={styles.textoVoltar}>
-                                Voltar
+                            <Text style={styles.textoOpcao}>
+                                Carga #{carga.id}
+                            </Text>
+
+                            <Text style={styles.detalhe}>
+                                Data: {String(carga.data_prevista).split("-").reverse().join("/")}
+                            </Text>
+
+                            <Text style={styles.detalhe}>
+                                Peso: {carga.peso_total} kg
                             </Text>
 
                         </Pressable>
 
-                    </View>
+                    ))}
 
-
-                    {/* DADOS DA ROTA */}
-
-                    <View style={styles.card}>
-
-                        <Text style={styles.tituloSecao}>
-                            Dados da rota
+                    {!carregando && cargas.length === 0 && (
+                        <Text style={styles.detalhe}>
+                            Nenhuma carga cadastrada.
                         </Text>
-
-
-                        <View
-                            style={[
-                                styles.linha,
-                                telaGrande &&
-                                styles.linhaGrande
-                            ]}
-                        >
-
-
-                            <View style={styles.campo}>
-
-                                <Text style={styles.label}>
-                                    Nome da rota
-                                </Text>
-
-                                <View style={styles.inputFake}>
-
-                                    <Text style={styles.inputTexto}>
-                                        {nomeRota}
-                                    </Text>
-
-                                </View>
-
-                            </View>
-
-
-                            <View style={styles.campo}>
-
-                                <Text style={styles.label}>
-                                    Data
-                                </Text>
-
-                                <View style={styles.inputFake}>
-
-                                    <Text style={styles.inputTexto}>
-                                        {dataRota}
-                                    </Text>
-
-                                </View>
-
-                            </View>
-
-                        </View>
-
-
-                        <View
-                            style={[
-                                styles.linha,
-                                telaGrande &&
-                                styles.linhaGrande
-                            ]}
-                        >
-
-
-                            <View style={styles.campo}>
-
-                                <Text style={styles.label}>
-                                    Caminhão
-                                </Text>
-
-                                <Pressable
-                                    style={styles.seletor}
-                                    onPress={() => {
-
-                                        Alert.alert(
-                                            "Caminhão",
-                                            "Seleção de caminhão será conectada à API."
-                                        );
-
-                                    }}
-                                >
-
-                                    <Text style={styles.seletorTexto}>
-                                        {caminhao.nome}
-                                    </Text>
-
-                                    <Text style={styles.seta}>
-                                        ▼
-                                    </Text>
-
-                                </Pressable>
-
-                            </View>
-
-
-                            <View style={styles.campo}>
-
-                                <Text style={styles.label}>
-                                    Motorista
-                                </Text>
-
-                                <Pressable
-                                    style={styles.seletor}
-                                    onPress={() => {
-
-                                        Alert.alert(
-                                            "Motorista",
-                                            "Seleção de motorista será conectada à API."
-                                        );
-
-                                    }}
-                                >
-
-                                    <Text style={styles.seletorTexto}>
-                                        {motorista.nome}
-                                    </Text>
-
-                                    <Text style={styles.seta}>
-                                        ▼
-                                    </Text>
-
-                                </Pressable>
-
-                            </View>
-
-                        </View>
-
-                    </View>
-
-
-                    {/* PEDIDOS */}
-
-                    <View style={styles.pedidosArea}>
-
-                        <View style={styles.tituloPedidosArea}>
-
-                            <View>
-
-                                <Text style={styles.tituloSecao}>
-                                    Pedidos da rota
-                                </Text>
-
-                                <Text style={styles.descricaoSecao}>
-                                    Organize os pedidos na ordem em que serão entregues.
-                                </Text>
-
-                            </View>
-
-
-                            <Pressable
-                                style={({ pressed }) => [
-                                    styles.botaoAdicionar,
-                                    pressed &&
-                                    styles.botaoPressionado
-                                ]}
-                                onPress={() => {
-
-                                    Alert.alert(
-                                        "Adicionar pedido",
-                                        "Aqui futuramente serão exibidos os pedidos disponíveis."
-                                    );
-
-                                }}
-                            >
-
-                                <Text style={styles.textoBotaoAdicionar}>
-                                    + Adicionar pedido
-                                </Text>
-
-                            </Pressable>
-
-                        </View>
-
-
-                        {/* LISTA DE PEDIDOS */}
-
-                        {pedidos.map(
-                            (pedido, index) => (
-
-                                <View
-                                    key={pedido.id}
-                                    style={styles.pedidoCard}
-                                >
-
-
-                                    <View style={styles.numeroOrdem}>
-
-                                        <Text style={styles.numeroTexto}>
-                                            {index + 1}º
-                                        </Text>
-
-                                    </View>
-
-
-                                    <View style={styles.pedidoInformacoes}>
-
-                                        <View style={styles.pedidoCabecalho}>
-
-                                            <View>
-
-                                                <Text style={styles.pedidoCliente}>
-                                                    {pedido.cliente}
-                                                </Text>
-
-                                                <Text style={styles.pedidoNumero}>
-                                                    Pedido #{pedido.id}
-                                                </Text>
-
-                                            </View>
-
-
-                                            <Text style={styles.pedidoPeso}>
-                                                {pedido.pesoTotal.toLocaleString(
-                                                    "pt-BR"
-                                                )} kg
-                                            </Text>
-
-                                        </View>
-
-
-                                        <Text style={styles.pedidoLocal}>
-                                            📍 {pedido.local}
-                                        </Text>
-
-
-                                        <View style={styles.acoesPedido}>
-
-
-                                            <Pressable
-                                                style={({ pressed }) => [
-                                                    styles.botaoDetalhes,
-                                                    pressed &&
-                                                    styles.botaoPressionado
-                                                ]}
-                                                onPress={() =>
-                                                    abrirDetalhes(pedido)
-                                                }
-                                            >
-
-                                                <Text style={styles.textoDetalhes}>
-                                                    Ver detalhes
-                                                </Text>
-
-                                            </Pressable>
-
-
-                                            <Pressable
-                                                style={[
-                                                    styles.botaoOrdem,
-                                                    index === 0 &&
-                                                    styles.botaoDesabilitado
-                                                ]}
-                                                disabled={
-                                                    index === 0
-                                                }
-                                                onPress={() =>
-                                                    moverParaCima(index)
-                                                }
-                                            >
-
-                                                <Text style={styles.textoOrdem}>
-                                                    ↑
-                                                </Text>
-
-                                            </Pressable>
-
-
-                                            <Pressable
-                                                style={[
-                                                    styles.botaoOrdem,
-                                                    index === pedidos.length - 1 &&
-                                                    styles.botaoDesabilitado
-                                                ]}
-                                                disabled={
-                                                    index === pedidos.length - 1
-                                                }
-                                                onPress={() =>
-                                                    moverParaBaixo(index)
-                                                }
-                                            >
-
-                                                <Text style={styles.textoOrdem}>
-                                                    ↓
-                                                </Text>
-
-                                            </Pressable>
-
-                                        </View>
-
-                                    </View>
-
-                                </View>
-
-                            )
-                        )}
-
-                    </View>
-
-
-                    {/* RESUMO */}
-
-                    <View style={styles.resumo}>
-
-                        <View>
-
-                            <Text style={styles.resumoTitulo}>
-                                Resumo da rota
-                            </Text>
-
-                            <Text style={styles.resumoDescricao}>
-                                {pedidos.length} pedidos selecionados
-                            </Text>
-
-                        </View>
-
-
-                        <View style={styles.resumoPeso}>
-
-                            <Text style={styles.resumoLabel}>
-                                Peso total
-                            </Text>
-
-                            <Text style={styles.resumoValor}>
-                                {pesoTotal.toLocaleString(
-                                    "pt-BR"
-                                )} kg
-                            </Text>
-
-                        </View>
-
-                    </View>
-
-
-                    {/* BOTÃO CRIAR */}
-
-                    <Pressable
-                        style={({ pressed }) => [
-                            styles.botaoCriar,
-                            pressed &&
-                            styles.botaoPressionado
-                        ]}
-                        onPress={criarRota}
-                    >
-
-                        <Text style={styles.textoBotaoCriar}>
-                            Criar rota
-                        </Text>
-
-                    </Pressable>
-
-
-                </View>
-
-            </ScrollView>
-
-
-            {/* MODAL DE DETALHES */}
-
-            <Modal
-                visible={
-                    pedidoSelecionado !== null
-                }
-                transparent
-                animationType="fade"
-                onRequestClose={
-                    fecharDetalhes
-                }
-            >
-
-                <View style={styles.modalFundo}>
-
-                    {pedidoSelecionado && (
-
-                        <View
-                            style={[
-                                styles.modal,
-                                telaGrande &&
-                                styles.modalGrande
-                            ]}
-                        >
-
-
-                            <View style={styles.modalCabecalho}>
-
-                                <View>
-
-                                    <Text style={styles.modalTitulo}>
-                                        Detalhes do pedido
-                                    </Text>
-
-                                    <Text style={styles.modalPedido}>
-                                        Pedido #{pedidoSelecionado.id}
-                                    </Text>
-
-                                </View>
-
-
-                                <Pressable
-                                    onPress={
-                                        fecharDetalhes
-                                    }
-                                >
-
-                                    <Text style={styles.fechar}>
-                                        ✕
-                                    </Text>
-
-                                </Pressable>
-
-                            </View>
-
-
-                            {/* CLIENTE */}
-
-                            <View style={styles.detalheBloco}>
-
-                                <Text style={styles.detalheLabel}>
-                                    Cliente
-                                </Text>
-
-                                <Text style={styles.detalheValor}>
-                                    {pedidoSelecionado.cliente}
-                                </Text>
-
-                            </View>
-
-
-                            {/* LOCAL */}
-
-                            <View style={styles.detalheBloco}>
-
-                                <Text style={styles.detalheLabel}>
-                                    Local de entrega
-                                </Text>
-
-                                <Text style={styles.detalheValor}>
-                                    📍 {pedidoSelecionado.local}
-                                </Text>
-
-                            </View>
-
-
-                            {/* DATA */}
-
-                            <View style={styles.detalheBloco}>
-
-                                <Text style={styles.detalheLabel}>
-                                    Data prevista
-                                </Text>
-
-                                <Text style={styles.detalheValor}>
-                                    {pedidoSelecionado.dataPrevista}
-                                </Text>
-
-                            </View>
-
-
-                            {/* MATERIAIS */}
-
-                            <View style={styles.materiaisArea}>
-
-                                <Text style={styles.detalheLabel}>
-                                    Materiais
-                                </Text>
-
-
-                                {pedidoSelecionado.materiais.map(
-                                    (material, index) => (
-
-                                        <View
-                                            key={index}
-                                            style={styles.material}
-                                        >
-
-                                            <Text style={styles.materialNome}>
-                                                {material.nome}
-                                            </Text>
-
-                                            <Text style={styles.materialQuantidade}>
-                                                Quantidade: {material.quantidade}
-                                            </Text>
-
-                                            <Text style={styles.materialPeso}>
-                                                Peso unitário: {material.pesoUnitario} kg
-                                            </Text>
-
-                                            <Text style={styles.materialPeso}>
-                                                Peso total: {material.pesoTotal.toLocaleString(
-                                                    "pt-BR"
-                                                )} kg
-                                            </Text>
-
-                                        </View>
-
-                                    )
-                                )}
-
-                            </View>
-
-
-                            {/* OBSERVAÇÃO */}
-
-                            <View style={styles.detalheBloco}>
-
-                                <Text style={styles.detalheLabel}>
-                                    Observação
-                                </Text>
-
-                                <Text style={styles.detalheValor}>
-                                    {pedidoSelecionado.observacao}
-                                </Text>
-
-                            </View>
-
-
-                            <Pressable
-                                style={({ pressed }) => [
-                                    styles.botaoFechar,
-                                    pressed &&
-                                    styles.botaoPressionado
-                                ]}
-                                onPress={
-                                    fecharDetalhes
-                                }
-                            >
-
-                                <Text style={styles.textoBotaoFechar}>
-                                    Fechar
-                                </Text>
-
-                            </Pressable>
-
-
-                        </View>
-
                     )}
 
                 </View>
 
-            </Modal>
+                {/* ORDEM DOS PEDIDOS */}
+
+                <View style={styles.card}>
+
+                    <Text style={styles.secao}>
+                        Ordem das entregas
+                    </Text>
+
+                    {pedidos.map((pedido, index) => (
+
+                        <View
+                            key={String(pedido.id)}
+                            style={styles.pedido}
+                        >
+
+                            <View style={styles.informacoes}>
+
+                                <Text style={styles.textoPedido}>
+                                    {index + 1}. Pedido #{pedido.id}
+                                </Text>
+
+                                <Text style={styles.detalhe}>
+                                    Cliente: {pedido.cliente?.nome || "Não informado"}
+                                </Text>
+
+                                <Text style={styles.detalhe}>
+                                    Endereço: {pedido.cliente?.endereco || "Não informado"}
+                                </Text>
+
+                                <Text style={styles.detalhe}>
+                                    {pedido.cliente?.cidade || ""} / {pedido.cliente?.estado || ""}
+                                </Text>
+
+                                <Text style={styles.detalhe}>
+                                    Peso: {pedido.peso_total} kg
+                                </Text>
+
+                            </View>
+
+                            <View style={styles.setas}>
+
+                                <Pressable
+                                    style={styles.botaoSeta}
+                                    onPress={() => moverPedido(index, -1)}
+                                >
+                                    <Text style={styles.textoSeta}>↑</Text>
+                                </Pressable>
+
+                                <Pressable
+                                    style={styles.botaoSeta}
+                                    onPress={() => moverPedido(index, 1)}
+                                >
+                                    <Text style={styles.textoSeta}>↓</Text>
+                                </Pressable>
+
+                            </View>
+
+                        </View>
+
+                    ))}
+
+                    {cargaSelecionada && pedidos.length === 0 && !carregando && (
+                        <Text style={styles.detalhe}>
+                            Essa carga não possui pedidos vinculados.
+                        </Text>
+                    )}
+
+                    <View style={styles.resumo}>
+                        <Text style={styles.label}>
+                            Peso total da rota
+                        </Text>
+
+                        <Text style={styles.peso}>
+                            {pesoTotal.toLocaleString("pt-BR")} kg
+                        </Text>
+                    </View>
+
+                </View>
+
+                <Pressable
+                    style={styles.botao}
+                    onPress={criarRota}
+                    disabled={salvando}
+                >
+
+                    {salvando ? (
+                        <ActivityIndicator color="#FFFFFF" />
+                    ) : (
+                        <Text style={styles.textoBotao}>
+                            Salvar rota
+                        </Text>
+                    )}
+
+                </Pressable>
+
+                <Pressable
+                    style={styles.botaoSecundario}
+                    onPress={() => navigation.navigate("GerenciarRotas")}
+                >
+                    <Text style={styles.textoSecundario}>
+                        Visualizar rotas criadas
+                    </Text>
+                </Pressable>
+
+            </ScrollView>
 
         </SafeAreaView>
 
@@ -894,694 +477,164 @@ export default function TelaCriarRota({ navigation }) {
 
 }
 
-
 const styles = StyleSheet.create({
 
     container: {
         flex: 1,
-
         backgroundColor: "#E4B89E"
     },
 
-
-    scrollContent: {
-        flexGrow: 1,
-
-        paddingHorizontal: 20,
-
-        paddingVertical: 30
-    },
-
-
-    content: {
+    conteudo: {
+        padding: 22,
         width: "100%",
-
-        maxWidth: 900,
-
-        alignSelf: "center"
+        maxWidth: 850,
+        alignSelf: "center",
+        paddingBottom: 40
     },
 
-
-    contentGrande: {
-        paddingHorizontal: 10
+    voltar: {
+        color: "#252B33",
+        fontWeight: "700",
+        marginBottom: 20
     },
-
-
-    header: {
-        flexDirection: "row",
-
-        justifyContent: "space-between",
-
-        alignItems: "center",
-
-        flexWrap: "wrap",
-
-        gap: 15,
-
-        marginBottom: 30
-    },
-
 
     titulo: {
-        fontSize: 30,
-
-        fontWeight: "700",
-
-        color: "#20262E"
+        fontSize: 28,
+        fontWeight: "800",
+        color: "#252B33"
     },
-
 
     subtitulo: {
-        marginTop: 7,
-
-        fontSize: 14,
-
-        color: "#6B7280"
+        color: "#6B5A50",
+        marginTop: 5,
+        marginBottom: 20
     },
-
-
-    botaoVoltar: {
-        minHeight: 42,
-
-        paddingHorizontal: 18,
-
-        borderWidth: 1,
-
-        borderColor: "#7a3f074d",
-
-        borderRadius: 9,
-
-        backgroundColor: "#FFFFFF",
-
-        justifyContent: "center",
-
-        alignItems: "center"
-    },
-
-
-    textoVoltar: {
-        color: "#303842",
-
-        fontSize: 14,
-
-        fontWeight: "600"
-    },
-
 
     card: {
         backgroundColor: "#FFF9F5",
-
-        borderRadius: 12,
-
-        padding: 24,
-
-        borderWidth: 1,
-
-        borderColor: "#7a3f074d",
-
-        marginBottom: 25
+        borderRadius: 14,
+        padding: 20,
+        marginBottom: 16
     },
 
-
-    tituloSecao: {
-        fontSize: 19,
-
-        fontWeight: "700",
-
+    secao: {
+        fontSize: 18,
+        fontWeight: "800",
         color: "#252B33",
-
-        marginBottom: 6
-    },
-
-
-    descricaoSecao: {
-        fontSize: 13,
-
-        color: "#6B7280",
-
-        lineHeight: 20,
-
-        marginBottom: 20
-    },
-
-
-    linha: {
-        flexDirection: "column",
-
-        gap: 15,
-
         marginBottom: 15
     },
 
-
-    linhaGrande: {
-        flexDirection: "row"
-    },
-
-
-    campo: {
-        flex: 1
-    },
-
-
     label: {
-        fontSize: 13,
-
-        fontWeight: "600",
-
-        color: "#5F514A",
-
+        fontWeight: "700",
+        color: "#252B33",
         marginBottom: 7
     },
 
-
-    inputFake: {
-        minHeight: 48,
-
+    input: {
         backgroundColor: "#F3E5DD",
-
         borderWidth: 1,
-
         borderColor: "#E0C8B9",
-
         borderRadius: 9,
-
-        paddingHorizontal: 14,
-
-        justifyContent: "center"
+        padding: 12
     },
 
-
-    inputTexto: {
-        color: "#252B33",
-
-        fontSize: 14
-    },
-
-
-    seletor: {
-        minHeight: 48,
-
-        backgroundColor: "#F3E5DD",
-
+    opcao: {
         borderWidth: 1,
-
         borderColor: "#E0C8B9",
-
-        borderRadius: 9,
-
-        paddingHorizontal: 14,
-
-        flexDirection: "row",
-
-        justifyContent: "space-between",
-
-        alignItems: "center"
-    },
-
-
-    seletorTexto: {
-        color: "#252B33",
-
-        fontSize: 14
-    },
-
-
-    seta: {
-        color: "#806C61",
-
-        fontSize: 12
-    },
-
-
-    pedidosArea: {
-        marginBottom: 25
-    },
-
-
-    tituloPedidosArea: {
-        flexDirection: "row",
-
-        justifyContent: "space-between",
-
-        alignItems: "flex-end",
-
-        flexWrap: "wrap",
-
-        gap: 15,
-
-        marginBottom: 15
-    },
-
-
-    botaoAdicionar: {
-        minHeight: 44,
-
-        paddingHorizontal: 18,
-
-        backgroundColor: "#C96A22",
-
-        borderRadius: 9,
-
-        justifyContent: "center",
-
-        alignItems: "center"
-    },
-
-
-    textoBotaoAdicionar: {
-        color: "#FFFFFF",
-
-        fontSize: 13,
-
-        fontWeight: "700"
-    },
-
-
-    pedidoCard: {
-        backgroundColor: "#FFF9F5",
-
-        borderWidth: 1,
-
-        borderColor: "#7a3f074d",
-
-        borderRadius: 12,
-
-        padding: 18,
-
-        marginBottom: 12,
-
-        flexDirection: "row",
-
-        gap: 15
-    },
-
-
-    numeroOrdem: {
-        width: 45,
-
-        height: 45,
-
         borderRadius: 10,
-
-        backgroundColor: "#252B33",
-
-        justifyContent: "center",
-
-        alignItems: "center"
+        padding: 14,
+        marginBottom: 10
     },
 
-
-    numeroTexto: {
-        color: "#FFFFFF",
-
-        fontSize: 15,
-
-        fontWeight: "700"
-    },
-
-
-    pedidoInformacoes: {
-        flex: 1,
-
-        minWidth: 0
-    },
-
-
-    pedidoCabecalho: {
-        flexDirection: "row",
-
-        justifyContent: "space-between",
-
-        alignItems: "flex-start",
-
-        gap: 10
-    },
-
-
-    pedidoCliente: {
-        color: "#252B33",
-
-        fontSize: 16,
-
-        fontWeight: "700"
-    },
-
-
-    pedidoNumero: {
-        color: "#806C61",
-
-        fontSize: 12,
-
-        marginTop: 3
-    },
-
-
-    pedidoPeso: {
-        color: "#C96A22",
-
-        fontSize: 14,
-
-        fontWeight: "700"
-    },
-
-
-    pedidoLocal: {
-        color: "#5F514A",
-
-        fontSize: 13,
-
-        marginTop: 12
-    },
-
-
-    acoesPedido: {
-        flexDirection: "row",
-
-        justifyContent: "flex-end",
-
-        alignItems: "center",
-
-        gap: 8,
-
-        marginTop: 15,
-
-        flexWrap: "wrap"
-    },
-
-
-    botaoDetalhes: {
-        minHeight: 40,
-
-        paddingHorizontal: 15,
-
-        borderWidth: 1,
-
+    opcaoSelecionada: {
         borderColor: "#C96A22",
-
-        borderRadius: 8,
-
-        justifyContent: "center",
-
-        alignItems: "center"
+        backgroundColor: "#FCEBDD"
     },
 
+    textoOpcao: {
+        fontWeight: "800",
+        color: "#252B33"
+    },
 
-    textoDetalhes: {
-        color: "#C96A22",
-
+    detalhe: {
         fontSize: 12,
-
-        fontWeight: "700"
+        color: "#806C61",
+        marginTop: 4
     },
 
-
-    botaoOrdem: {
-        width: 40,
-
-        height: 40,
-
-        borderRadius: 8,
-
-        backgroundColor: "#252B33",
-
-        justifyContent: "center",
-
-        alignItems: "center"
+    pedido: {
+        flexDirection: "row",
+        alignItems: "center",
+        justifyContent: "space-between",
+        paddingVertical: 14,
+        borderBottomWidth: 1,
+        borderBottomColor: "#E8D8CE"
     },
 
-
-    botaoDesabilitado: {
-        opacity: 0.3
+    informacoes: {
+        flex: 1
     },
 
+    textoPedido: {
+        fontWeight: "800",
+        color: "#252B33"
+    },
 
-    textoOrdem: {
-        color: "#FFFFFF",
+    setas: {
+        gap: 8,
+        marginLeft: 10
+    },
 
+    botaoSeta: {
+        backgroundColor: "#F3E5DD",
+        borderRadius: 7,
+        padding: 9
+    },
+
+    textoSeta: {
         fontSize: 18,
-
-        fontWeight: "700"
+        color: "#C96A22",
+        fontWeight: "800"
     },
-
 
     resumo: {
+        marginTop: 20,
+        paddingTop: 15,
+        borderTopWidth: 1,
+        borderTopColor: "#E8D8CE"
+    },
+
+    peso: {
+        fontSize: 20,
+        fontWeight: "800",
+        color: "#C96A22"
+    },
+
+    botao: {
         backgroundColor: "#252B33",
-
-        borderRadius: 12,
-
-        padding: 22,
-
-        flexDirection: "row",
-
-        justifyContent: "space-between",
-
+        borderRadius: 10,
+        padding: 16,
         alignItems: "center",
-
-        flexWrap: "wrap",
-
-        gap: 20,
-
-        marginBottom: 20
-    },
-
-
-    resumoTitulo: {
-        color: "#FFFFFF",
-
-        fontSize: 17,
-
-        fontWeight: "700"
-    },
-
-
-    resumoDescricao: {
-        color: "#D1D5DB",
-
-        fontSize: 13,
-
-        marginTop: 4
-    },
-
-
-    resumoPeso: {
-        alignItems: "flex-end"
-    },
-
-
-    resumoLabel: {
-        color: "#D1D5DB",
-
-        fontSize: 12
-    },
-
-
-    resumoValor: {
-        color: "#FFFFFF",
-
-        fontSize: 20,
-
-        fontWeight: "700",
-
-        marginTop: 3
-    },
-
-
-    botaoCriar: {
-        minHeight: 52,
-
-        backgroundColor: "#C96A22",
-
-        borderRadius: 9,
-
-        justifyContent: "center",
-
-        alignItems: "center"
-    },
-
-
-    textoBotaoCriar: {
-        color: "#FFFFFF",
-
-        fontSize: 15,
-
-        fontWeight: "700"
-    },
-
-
-    botaoPressionado: {
-        opacity: 0.8
-    },
-
-
-    /* MODAL */
-
-    modalFundo: {
-        flex: 1,
-
-        backgroundColor: "rgba(0,0,0,0.45)",
-
-        justifyContent: "center",
-
-        alignItems: "center",
-
-        padding: 20
-    },
-
-
-    modal: {
-        width: "100%",
-
-        maxHeight: "90%",
-
-        backgroundColor: "#FFF9F5",
-
-        borderRadius: 14,
-
-        padding: 24
-    },
-
-
-    modalGrande: {
-        maxWidth: 600
-    },
-
-
-    modalCabecalho: {
-        flexDirection: "row",
-
-        justifyContent: "space-between",
-
-        alignItems: "flex-start",
-
-        marginBottom: 20
-    },
-
-
-    modalTitulo: {
-        color: "#252B33",
-
-        fontSize: 20,
-
-        fontWeight: "700"
-    },
-
-
-    modalPedido: {
-        color: "#806C61",
-
-        fontSize: 12,
-
-        marginTop: 4
-    },
-
-
-    fechar: {
-        color: "#252B33",
-
-        fontSize: 20,
-
-        fontWeight: "700",
-
-        paddingHorizontal: 5
-    },
-
-
-    detalheBloco: {
-        marginBottom: 17
-    },
-
-
-    detalheLabel: {
-        color: "#806C61",
-
-        fontSize: 12,
-
-        fontWeight: "600",
-
-        marginBottom: 5
-    },
-
-
-    detalheValor: {
-        color: "#252B33",
-
-        fontSize: 14,
-
-        lineHeight: 20
-    },
-
-
-    materiaisArea: {
-        marginBottom: 17
-    },
-
-
-    material: {
-        backgroundColor: "#F3E5DD",
-
-        borderRadius: 9,
-
-        padding: 13,
-
-        marginTop: 8,
-
-        borderWidth: 1,
-
-        borderColor: "#E0C8B9"
-    },
-
-
-    materialNome: {
-        color: "#252B33",
-
-        fontSize: 14,
-
-        fontWeight: "700",
-
-        marginBottom: 5
-    },
-
-
-    materialQuantidade: {
-        color: "#5F514A",
-
-        fontSize: 12,
-
-        marginBottom: 2
-    },
-
-
-    materialPeso: {
-        color: "#5F514A",
-
-        fontSize: 12,
-
-        marginBottom: 2
-    },
-
-
-    botaoFechar: {
-        minHeight: 46,
-
-        backgroundColor: "#252B33",
-
-        borderRadius: 9,
-
-        justifyContent: "center",
-
-        alignItems: "center",
-
         marginTop: 5
     },
 
-
-    textoBotaoFechar: {
+    textoBotao: {
         color: "#FFFFFF",
+        fontWeight: "800"
+    },
 
-        fontSize: 14,
+    botaoSecundario: {
+        borderWidth: 1,
+        borderColor: "#252B33",
+        borderRadius: 10,
+        padding: 15,
+        alignItems: "center",
+        marginTop: 12
+    },
 
-        fontWeight: "700"
+    textoSecundario: {
+        color: "#252B33",
+        fontWeight: "800"
     }
 
 });

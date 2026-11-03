@@ -46,7 +46,7 @@ export default function TelaLogin({ navigation }) {
         }
 
         if (!supabaseConfigurado) {
-            setMensagem("Supabase não configurado. Confira o arquivo .env e reinicie o Expo.");
+            setMensagem("Erro no servidor da aplicação! Os moderadores estão resolvendo.");
             return;
         }
 

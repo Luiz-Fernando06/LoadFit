@@ -38,8 +38,7 @@ export default function TelaCadastroCaminhao({ navigation }) {
     if (!supabaseConfigurado) {
       setCarregandoLista(false);
       mostrarMensagem(
-        "Configure EXPO_PUBLIC_SUPABASE_URL e a chave no arquivo .env para conectar ao banco.",
-        "erro"
+        "Erro no servidor da aplicação! Os moderadores estão resolvendo."
       );
       return;
     }
@@ -65,7 +64,7 @@ export default function TelaCadastroCaminhao({ navigation }) {
     } catch (erro) {
       console.error("Erro ao carregar caminhões:", erro);
       mostrarMensagem(
-        `Não foi possível carregar os caminhões. ${erro.message || "Confira a tabela caminhoes e as políticas RLS no Supabase."}`,
+        `Não foi possível carregar os caminhões.`,
         "erro"
       );
     } finally {
@@ -105,17 +104,17 @@ export default function TelaCadastroCaminhao({ navigation }) {
     );
 
     if (!placaNormalizada || !modeloNormalizado || !capacidade.trim()) {
-      mostrarMensagem("Preencha a placa, o tipo de veículo e a capacidade.", "erro");
+      mostrarMensagem("Preencha a placa, o tipo de veículo e a capacidade.");
       return;
     }
 
     if (!Number.isFinite(capacidadeNormalizada) || capacidadeNormalizada <= 0) {
-      mostrarMensagem("Informe uma capacidade válida, maior que zero.", "erro");
+      mostrarMensagem("Informe uma capacidade válida, maior que zero.");
       return;
     }
 
     if (!supabaseConfigurado) {
-      mostrarMensagem("Supabase não configurado. Preencha o arquivo .env e reinicie o Expo.", "erro");
+      mostrarMensagem("Erro no servidor da aplicação! Os moderadores estão resolvendo.");
       return;
     }
 
@@ -124,7 +123,7 @@ export default function TelaCadastroCaminhao({ navigation }) {
       const { data: usuarioData, error: usuarioErro } = await supabase.auth.getUser();
       if (usuarioErro) throw usuarioErro;
       if (!usuarioData.user) {
-        mostrarMensagem("Sua sessão expirou. Entre novamente no sistema.", "erro");
+        mostrarMensagem("Sua sessão expirou. Entre novamente no sistema.");
         return;
       }
 
@@ -163,7 +162,7 @@ export default function TelaCadastroCaminhao({ navigation }) {
       if (texto.toLowerCase().includes("duplicate") || texto.toLowerCase().includes("unique")) {
         texto = "Já existe um caminhão com essa placa na sua conta.";
       } else if (texto.toLowerCase().includes("row-level security") || texto.toLowerCase().includes("rls")) {
-        texto = "O Supabase bloqueou a gravação. Confira se as políticas RLS foram executadas no SQL Editor.";
+        texto = "Erro no servidor da aplicação! Os moderadores estão resolvendo.";
       }
       mostrarMensagem(texto, "erro");
     } finally {
@@ -173,7 +172,7 @@ export default function TelaCadastroCaminhao({ navigation }) {
 
   async function excluirCaminhao(id) {
     if (!supabaseConfigurado) {
-      mostrarMensagem("Supabase não configurado. Confira o arquivo .env.", "erro");
+      mostrarMensagem("Erro no servidor da aplicação! Os moderadores estão resolvendo.");
       return;
     }
 
@@ -199,7 +198,7 @@ export default function TelaCadastroCaminhao({ navigation }) {
     } catch (erro) {
       console.error("Erro ao excluir caminhão:", erro);
       mostrarMensagem(
-        `Não foi possível excluir o caminhão. ${erro.message || "Verifique as permissões da tabela caminhoes."}`,
+        `Não foi possível excluir o caminhão.`,
         "erro"
       );
     }

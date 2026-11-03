@@ -118,7 +118,6 @@ export default function OrganizarCarga({ navigation }) {
       setCaminhoesDisponiveis(caminhoesResposta.data || []);
       setMotoristasDisponiveis(motoristasResposta.data || []);
       setPedidosDisponiveis(pedidosPendentes);
-      mostrarMensagem("Caminhões, motoristas e pedidos carregados do Supabase.", "sucesso");
     } catch (erro) {
       console.error("Erro ao carregar dados para a carga:", erro);
       let detalhe = erro.message || "Confira a conexão com o Supabase.";
@@ -199,7 +198,7 @@ export default function OrganizarCarga({ navigation }) {
       return;
     }
     if (!supabaseConfigurado) {
-      mostrarMensagem("Supabase não configurado. Confira o arquivo .env.", "erro");
+      mostrarMensagem("Erro no servidor da aplicação! Os moderadores estão resolvendo.", "erro");
       return;
     }
 
@@ -254,7 +253,7 @@ export default function OrganizarCarga({ navigation }) {
       setCaminhao(null);
       setMotorista(null);
       setPedidosCarga([]);
-      mostrarMensagem(`Carga #${cargaCriadaId} criada e salva no Supabase com sucesso!`, "sucesso");
+      mostrarMensagem(`Carga #${cargaCriadaId} criada`, "sucesso");
     } catch (erro) {
       console.error("Erro ao criar carga:", erro);
       let detalhe = erro.message || "Não foi possível criar a carga.";

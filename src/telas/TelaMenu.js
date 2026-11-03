@@ -336,6 +336,23 @@ export default function TelaMenu({ navigation }) {
 
                     </View>
 
+                    {/* Histórico de cargas */}
+                    <View style={styles.areaRotas}>
+                        <View style={styles.rotasTextoArea}>
+                            <Text style={styles.rotasTitulo}>Histórico de cargas</Text>
+                            <Text style={styles.rotasDescricao}>Consulte as cargas criadas, os caminhões, motoristas e pedidos vinculados.</Text>
+                        </View>
+                        <Pressable
+                            style={({ pressed }) => [
+                                styles.botaoOrganizar,
+                                pressed && styles.botaoPressionado
+                            ]}
+                            onPress={() => navigation.navigate("CargasFeitas")}
+                        >
+                            <Text style={styles.textoBotaoOrganizar}>Ver cargas feitas</Text>
+                        </Pressable>
+                    </View>
+
                     {/* Criar rotas */}
                     <View style={styles.areaRotas}>
 
@@ -363,6 +380,96 @@ export default function TelaMenu({ navigation }) {
 
                             <Text style={styles.textoBotaoRotas}>
                                 Criar rota
+                            </Text>
+
+                        </Pressable>
+
+                    </View>
+
+                                        
+                    {/* GERENCIAR PEDIDOS */}
+
+                    <View style={styles.areaRotas}>
+
+                        <View style={styles.rotasTextoArea}>
+
+                            <Text style={styles.rotasTitulo}>
+                                Gerenciar pedidos
+                            </Text>
+
+                            <Text style={styles.rotasDescricao}>
+                                Consulte, atualize e exclua pedidos cadastrados.
+                            </Text>
+
+                        </View>
+
+                        <Pressable
+                            style={styles.botaoRotas}
+                            onPress={() => navigation.navigate("GerenciarPedidos")}
+                        >
+
+                            <Text style={styles.textoBotaoRotas}>
+                                Gerenciar pedidos
+                            </Text>
+
+                        </Pressable>
+
+                    </View>
+
+
+                    {/* GERENCIAR CARGAS */}
+
+                    <View style={styles.areaRotas}>
+
+                        <View style={styles.rotasTextoArea}>
+
+                            <Text style={styles.rotasTitulo}>
+                                Gerenciar cargas
+                            </Text>
+
+                            <Text style={styles.rotasDescricao}>
+                                Consulte, atualize e exclua cargas já criadas.
+                            </Text>
+
+                        </View>
+
+                        <Pressable
+                            style={styles.botaoRotas}
+                            onPress={() => navigation.navigate("GerenciarCargas")}
+                        >
+
+                            <Text style={styles.textoBotaoRotas}>
+                                Gerenciar cargas
+                            </Text>
+
+                        </Pressable>
+
+                    </View>
+
+
+                    {/* VISUALIZAR ROTAS */}
+
+                    <View style={styles.areaRotas}>
+
+                        <View style={styles.rotasTextoArea}>
+
+                            <Text style={styles.rotasTitulo}>
+                                Visualizar rotas
+                            </Text>
+
+                            <Text style={styles.rotasDescricao}>
+                                Consulte as rotas criadas e a ordem de suas entregas.
+                            </Text>
+
+                        </View>
+
+                        <Pressable
+                            style={styles.botaoRotas}
+                            onPress={() => navigation.navigate("GerenciarRotas")}
+                        >
+
+                            <Text style={styles.textoBotaoRotas}>
+                                Visualizar rotas
                             </Text>
 
                         </Pressable>
